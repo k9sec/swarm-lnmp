@@ -9,8 +9,18 @@ services:
       - MYSQL_USER=test
       - MYSQL_PASSWORD=1234567
 
+
+# redis服务被限制为使用不超过50M的内存和0.50（不超过单个内核的50％）可用处理时间（CPU），并且具有保留20M的内存和0.25CPU时间（始终可用）。
   redis:
     image: redis:alpine
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
       
 
 # 构建一个镜像（利用docker-compose执行此文件）；如果在集群模式下部署，将忽略此项，docker stack仅仅接受预先构建好的镜像。 
@@ -36,18 +46,34 @@ services:
       - REDIS_PORT=6379
    
     deploy:
-      replicas: 1
+      mode: replicated # 默认
+      replicas: 1 # 副本数量一个
 
-    depends_on:
-      - mysql
-      - redis
 
 
   webserver:
       image: nginx:alpine
+      labels: # 指定标签
+        com.example.description: "This label will appear on all containers for the web service"
       volumes:
         - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
       ports:
         - "80:80"
-      depends_on:
+      deploy:
+        restart_policy:  # 配置是否以及如何在退出容器时重新启动容器
+          ondition: on-failure  
+          delay: 1s # 延时
+
+      depends_on: # 依赖于mysql redis
         - php-fpm
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    stop_grace_period: 1m30s
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
