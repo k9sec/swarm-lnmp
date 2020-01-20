@@ -61,8 +61,10 @@ services:
         - "80:80"
       deploy:
         restart_policy:  # 配置是否以及如何在退出容器时重新启动容器
-          ondition: on-failure  
+          condition: on-failure # 条件
           delay: 1s # 延时
+          max_attempts: 3 # 重新启动次数
+          window: 120s # 决定重新启动是否成功之前要等待的时间
 
       depends_on: # 依赖于mysql redis
         - php-fpm
