@@ -20,7 +20,7 @@ Route::get('/', function () {
 
 Route::get('/test', function () {
 
-    Redis::set('name', 'guwenjie');
+    Redis::set('name', 'aoppp');
     $values = Redis::get('name');
 
     try{
